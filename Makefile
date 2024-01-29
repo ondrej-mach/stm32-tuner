@@ -33,7 +33,7 @@ INCLUDES += -I$(FREERTOS_DIR)/portable/GCC/ARM_CM4F
 OBJECTS = $(addprefix $(OBJ_DIR)/, $(SRC_FILES:.c=.o))
 
 # Linker script for our MCU
-LDSCRIPT = stm32f4-discovery.ld
+LDSCRIPT = black-pill.ld
 
 # Using the stm32f4 series chip
 TARGETS		:= stm32/f4

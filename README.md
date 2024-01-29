@@ -1,6 +1,7 @@
 # STM32F4 Discovery FreeRTOS Makfile
 
-This is a simple template project to build a firmware for the [STM32F4 Discovery](https://www.st.com/en/evaluation-tools/stm32f4discovery.html) board with [FreeRTOS](https://www.freertos.org/) and [libopencm3](https://libopencm3.org/)
+This is a simple template project to build a firmware for the ---STM32F4 Discovery--- WeAct Black Pill 3.0 board with [FreeRTOS](https://www.freertos.org/) and [libopencm3](https://libopencm3.org/).
+
 
 The main file is provided as an example that implements a simple blink program.
 
