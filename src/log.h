@@ -2,7 +2,6 @@
 #define _LOG_H
 
 #ifdef DEBUG
-#include <stdio.h>
 #include "usb.h"
 #define LOG(str) usb_debug_log(str)
 #else

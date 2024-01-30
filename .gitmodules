@@ -4,3 +4,6 @@
 [submodule "inc/FreeRTOS"]
 	path = inc/FreeRTOS
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "inc/printf"]
+	path = inc/printf
+	url = https://github.com/mpaland/printf

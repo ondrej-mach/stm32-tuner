@@ -7,6 +7,9 @@ endif
 
 OPENCM3_DIR := inc/libopencm3
 FREERTOS_DIR := inc/FreeRTOS
+PRINTF_DIR := inc/printf
+
+DEFS += -DDEBUG
 
 OBJ_DIR = obj
 BIN_DIR = bin
@@ -24,8 +27,11 @@ SRC_FILES += $(FREERTOS_DIR)/timers.c
 SRC_FILES += $(FREERTOS_DIR)/portable/GCC/ARM_CM4F/port.c
 SRC_FILES += $(FREERTOS_DIR)/portable/MemMang/heap_4.c
 
+SRC_FILES += $(PRINTF_DIR)/printf.c
+
 INCLUDES  = -I$(realpath config)
 INCLUDES += -I$(realpath src)
+INCLUDES += -I$(PRINTF_DIR)
 INCLUDES += -I$(OPENCM3_DIR)/include
 INCLUDES += -I$(FREERTOS_DIR)/include
 INCLUDES += -I$(FREERTOS_DIR)/portable/GCC/ARM_CM4F

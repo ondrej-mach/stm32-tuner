@@ -1,5 +1,3 @@
-#define DEBUG
-
 #include "log.h"
 #include "usb.h"
 #include "audio.h"
@@ -10,6 +8,11 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
+#include <stdint.h>
+#include <string.h>
+#include <printf.h>
+
+
 static void task1(void *args __attribute((unused))) {
 	while (true) {
 		gpio_toggle(GPIOC, GPIO13);
@@ -19,8 +22,8 @@ static void task1(void *args __attribute((unused))) {
 
 static void task2(void *args __attribute((unused))) {
 	while (true) {
-		LOG("Hello There\n");
 		vTaskDelay(pdMS_TO_TICKS(10000));
+		printf("Hello There\n");
 	}
 }
 
