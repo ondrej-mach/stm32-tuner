@@ -49,8 +49,6 @@ static void tuner_task(void *args __attribute((unused))) {
 }
 
 int audio_init(void) {
-    LOG("Initializing audio\n");
-
     tunerListenSem = xSemaphoreCreateBinary();
     tunerCalcSem = xSemaphoreCreateBinary();
 
