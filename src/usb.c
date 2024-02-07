@@ -224,6 +224,7 @@ static usbd_device *usbd_dev;
 static void usb_task(void *args __attribute((unused))) {
     while (1) {
 		usbd_poll(usbd_dev);
+		taskYIELD();
 	}
 }
 
@@ -282,10 +283,14 @@ int _write(int fd, char *ptr, int len)
 
 void _putchar(char c) {
 	int wb = 0;
+	int tries = 0;
 	while (wb == 0) {
 		wb = usbd_ep_write_packet(usbd_dev, 0x82, &c, 1);
-		if (wb == 0) {
-			taskYIELD();
+		if (tries++ > 1000) {
+			break;
 		}
+		// if (wb == 0) {
+		// 	taskYIELD();
+		// }
 	}
 }

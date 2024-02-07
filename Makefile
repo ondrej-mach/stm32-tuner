@@ -81,10 +81,12 @@ TGT_CPPFLAGS	+= $(DEFS)
 
 # Linker flags
 TGT_LDFLAGS		+= --static -nostartfiles
+TGT_LDFLAGS		+= --specs=nano.specs
 TGT_LDFLAGS		+= -T$(LDSCRIPT)
 TGT_LDFLAGS		+= $(ARCH_FLAGS) $(DEBUG)
 TGT_LDFLAGS		+= -Wl,-Map=$(BIN_DIR)/$(*).map -Wl,--cref
 TGT_LDFLAGS		+= -Wl,--gc-sections
+TGT_LDFLAGS		+= -Wl,--print-memory-usage
 ifeq ($(V),1)
 TGT_LDFLAGS		+= -Wl,--print-gc-sections
 endif

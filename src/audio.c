@@ -13,38 +13,43 @@
 static int16_t tunerBuffer[YIN_BUFFER_SIZE];
 
 static SemaphoreHandle_t tunerListenSem, tunerCalcSem;
+static volatile uint16_t tbIndex = 0;
 
 
 static void passthrough(const int32_t *restrict in, int32_t *restrict out) {
     for (int i=0; i<FRAME_SAMPLES; i++) {
-        out[i] = in[i];
+        out[i] = (i>>5) << 26;// in[i];
     }
 
-    if (xSemaphoreTakeFromISR(tunerListenSem, NULL) == pdTRUE) {
-        static uint16_t tbIndex = 0;
+    BaseType_t hptw = pdFALSE; // Higher Priority Task Woken
+    if (xSemaphoreTakeFromISR(tunerListenSem, &hptw) == pdTRUE) {
         for (int i=0; i<FRAME_SAMPLES/2; i++) {
-            tunerBuffer[tbIndex+i] = in[i*2] >> 8; // only left channel
+            tunerBuffer[tbIndex+i] = in[i*2] >> 16; // only left channel
         }
         tbIndex += FRAME_SAMPLES/2;
 
-        if (tbIndex < FRAME_SAMPLES/2) {
-            xSemaphoreGiveFromISR(tunerListenSem, NULL);
+        if (tbIndex < YIN_BUFFER_SIZE) {
+            xSemaphoreGiveFromISR(tunerListenSem, &hptw);
         } else {
-            xSemaphoreGiveFromISR(tunerCalcSem, NULL);
+            xSemaphoreGiveFromISR(tunerCalcSem, &hptw);
             tbIndex = 0;
         }
     }
+    portYIELD_FROM_ISR(hptw);
 }
+
 
 static void tuner_task(void *args __attribute((unused))) {
     static Yin yin;
-    Yin_init(&yin, YIN_BUFFER_SIZE, 0.05);
+    Yin_init(&yin, YIN_BUFFER_SIZE, 0.5);
 
     while (1) {
         xSemaphoreGive(tunerListenSem);
-        xSemaphoreTake(tunerCalcSem, portMAX_DELAY);
-        float pitch = Yin_getPitch(&yin, tunerBuffer);
-        printf("Pitch is found to be %f with probabiity %f\n", pitch, Yin_getProbability(&yin));
+        if (xSemaphoreTake(tunerCalcSem, portMAX_DELAY) == pdTRUE) {
+            float pitch = Yin_getPitch(&yin, tunerBuffer);
+            float prob = Yin_getProbability(&yin);
+            printf("Pitch is found to be %f with probability %f\n", pitch, prob);
+        }
     }
 }
 
@@ -56,7 +61,7 @@ int audio_init(void) {
     set_processing_function(passthrough);
 
     //xTaskCreate(audio_task, "AUDIO", 100, NULL, configMAX_PRIORITIES-1, NULL);
-    xTaskCreate(tuner_task, "TUNER", 100, NULL, configMAX_PRIORITIES-1, NULL);
+    xTaskCreate(tuner_task, "TUNER", 256, NULL, configMAX_PRIORITIES-1, NULL);
 
     return 0;
 }

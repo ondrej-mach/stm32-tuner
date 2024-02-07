@@ -1,4 +1,6 @@
 EXTERN(vector_table)
+
+
 ENTRY(reset_handler)
 MEMORY
 {

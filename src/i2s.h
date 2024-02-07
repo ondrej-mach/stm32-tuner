@@ -7,7 +7,7 @@
 
 #include <stdint.h>
 
-#define AUDIO_FS 44100
+#define AUDIO_FS 48000
 #define FRAME_SAMPLES 64
 
 typedef void AudioProcessor(const int32_t *restrict in, int32_t *restrict out);

@@ -13,9 +13,9 @@
 #include <libopencm3/stm32/spi.h>
 
 
-#define PLLI2S_N_VALUE 258
-#define PLLI2S_R_VALUE 3
-#define I2SPR_I2SDIV_VALUE 3
+#define PLLI2S_N_VALUE 384
+#define PLLI2S_R_VALUE 5
+#define I2SPR_I2SDIV_VALUE 12
 #define I2SPR_ODD_VALUE 1
 
 #define BUFFER_SAMPLES FRAME_SAMPLES
@@ -52,25 +52,27 @@ static void init_gpio(void) {
 }
 
 static void init_i2s(void) {
-    spi_reset(SPI2); // probably not needed
-
-    RCC_PLLI2SCFGR = PLLI2S_N_VALUE << RCC_PLLI2SCFGR_PLLI2SN_SHIFT
-        | PLLI2S_R_VALUE << RCC_PLLI2SCFGR_PLLI2SR_SHIFT;
+    rcc_plli2s_config(PLLI2S_N_VALUE, PLLI2S_R_VALUE);
 
     // Clock prescaler setup
-    SPI_I2SPR(SPI2) = SPI_I2SPR_MCKOE  // Output master CLK
-        | I2SPR_ODD_VALUE
+    SPI_I2SPR(SPI2) = I2SPR_ODD_VALUE << 8
         | I2SPR_I2SDIV_VALUE;
 
     // I2S protocol configuration
+	// ADC
+    SPI_I2SCFGR(I2S2_EXT_BASE) = SPI_I2SCFGR_I2SMOD
+        | SPI_I2SCFGR_I2SCFG_SLAVE_RECEIVE << SPI_I2SCFGR_I2SCFG_LSB
+        | SPI_I2SCFGR_I2SSTD_I2S_PHILIPS << SPI_I2SCFGR_I2SSTD_LSB       // TODO
+        | SPI_I2SCFGR_CKPOL
+        | SPI_I2SCFGR_DATLEN_32BIT << SPI_I2SCFGR_DATLEN_LSB;
+	// DAC
     SPI_I2SCFGR(SPI2) = SPI_I2SCFGR_I2SMOD
         | SPI_I2SCFGR_I2SCFG_MASTER_TRANSMIT << SPI_I2SCFGR_I2SCFG_LSB
         | SPI_I2SCFGR_I2SSTD_I2S_PHILIPS << SPI_I2SCFGR_I2SSTD_LSB       // TODO
         | SPI_I2SCFGR_CKPOL
-        | SPI_I2SCFGR_DATLEN_24BIT << SPI_I2SCFGR_DATLEN_LSB; // TODO
+        | SPI_I2SCFGR_DATLEN_32BIT << SPI_I2SCFGR_DATLEN_LSB; // TODO
 
-    SPI_I2SCFGR(I2S2_EXT_BASE) = SPI_I2SCFGR_I2SMOD
-        | SPI_I2SCFGR_I2SCFG_SLAVE_RECEIVE << SPI_I2SCFGR_I2SCFG_LSB;
+
 
     // Start the I2S PLL.
     RCC_CR |= RCC_CR_PLLI2SON;
@@ -86,7 +88,7 @@ static void init_dma(void) {
 	dma_set_peripheral_address(DMA1, DMA_STREAM4, (intptr_t)&SPI_DR(SPI2));
 	dma_set_memory_address(DMA1, DMA_STREAM4, (intptr_t)dacBuffer[0]); // TODO might be completely wrong
 	dma_set_memory_address_1(DMA1, DMA_STREAM4, (intptr_t)dacBuffer[1]); // same here
-	dma_set_number_of_data(DMA1, DMA_STREAM4, BUFFER_SAMPLES);
+	dma_set_number_of_data(DMA1, DMA_STREAM4, BUFFER_SAMPLES*2);
 	dma_channel_select(DMA1, DMA_STREAM4, DMA_SxCR_CHSEL_0);
 	dma_set_transfer_mode(DMA1, DMA_STREAM4, DMA_SxCR_DIR_MEM_TO_PERIPHERAL);
 	dma_set_memory_size(DMA1, DMA_STREAM4, DMA_SxCR_MSIZE_16BIT);
@@ -100,7 +102,7 @@ static void init_dma(void) {
 	dma_set_peripheral_address(DMA1, DMA_STREAM3, (intptr_t)&SPI_DR(I2S2_EXT_BASE));
 	dma_set_memory_address(DMA1, DMA_STREAM3, (intptr_t)adcBuffer[0]); // TODO
 	dma_set_memory_address_1(DMA1, DMA_STREAM3, (intptr_t)adcBuffer[1]);
-	dma_set_number_of_data(DMA1, DMA_STREAM3, BUFFER_SAMPLES);
+	dma_set_number_of_data(DMA1, DMA_STREAM3, BUFFER_SAMPLES*2);
 	dma_channel_select(DMA1, DMA_STREAM3, DMA_SxCR_CHSEL_3);
 	dma_set_transfer_mode(DMA1, DMA_STREAM3, DMA_SxCR_DIR_PERIPHERAL_TO_MEM);
 	dma_set_memory_size(DMA1, DMA_STREAM3, DMA_SxCR_MSIZE_16BIT);
@@ -120,40 +122,24 @@ static void init_dma(void) {
 }
 
 
+#define SWAP_HALFWORDS(w) (int32_t)(((uint32_t)(w))<<16 | ((uint32_t)(w))>>16)
+
 void dma1_stream3_isr(void) {
 	dma_clear_interrupt_flags(DMA1, DMA_STREAM3, DMA_TCIF);
 
-	int32_t *outBuffer = dma_get_target(DMA1, DMA_STREAM4) ?
-	                         (void*)dacBuffer[0] :
-	                         (void*)dacBuffer[1];
-	const int32_t *inBuffer = dma_get_target(DMA1, DMA_STREAM3) ?
-	                        (void*)adcBuffer[0] :
-	                        (void*)adcBuffer[1];
+	int32_t *outBuffer = dacBuffer[!dma_get_target(DMA1, DMA_STREAM4)];
+	int32_t *inBuffer = adcBuffer[!dma_get_target(DMA1, DMA_STREAM3)];
 
+	for (int i=0; i<BUFFER_SAMPLES; i++) {
+		inBuffer[i] = SWAP_HALFWORDS(inBuffer[i]);
+	}
 	if (audioProcFn) {
 		(*audioProcFn)(inBuffer, outBuffer);
     }
+    for (int i=0; i<BUFFER_SAMPLES; i++) {
+		outBuffer[i] = SWAP_HALFWORDS(outBuffer[i]);;
+	}
 
-	// samplecounter += CODEC_SAMPLES_PER_FRAME;
-	// int32_t framePeakOut = INT16_MIN;
-	// int32_t framePeakIn = INT16_MIN;
-
-	// for (unsigned s=0; s<BUFFER_SAMPLES; s++) {
-	// 	if (outBuffer->m[s] > framePeakOut) {
-	// 		framePeakOut = outBuffer->m[s];
-	// 	}
-	// 	if (inBuffer->m[s] > framePeakIn) {
-	// 		framePeakIn = inBuffer->m[s];
-	// 	}
-	// }
-	// if (framePeakOut > peakOut) {
-	// 	peakOut = framePeakOut;
-	// }
-	// if (framePeakIn > peakIn) {
-	// 	peakIn = framePeakIn;
-	// }
-    //
-	// platformFrameFinishedCB();
 }
 
 extern void init_codec(void) {

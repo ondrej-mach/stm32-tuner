@@ -2,10 +2,10 @@
 #define _YIN_H
 
 #include <stdint.h>
+#include "i2s.h"
 
 #define YIN_BUFFER_SIZE 2048
-#define YIN_SAMPLING_RATE 44100
-#define YIN_DEFAULT_THRESHOLD 0.15
+#define YIN_SAMPLING_RATE AUDIO_FS
 
 /**
  * @struct  Yin
