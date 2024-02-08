@@ -6,6 +6,8 @@
 
 #define YIN_BUFFER_SIZE 2048
 #define YIN_SAMPLING_RATE AUDIO_FS
+#define YIN_MIN_FREQ 60
+#define YIN_MAX_FREQ 3000
 
 /**
  * @struct  Yin

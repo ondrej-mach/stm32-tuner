@@ -5,6 +5,8 @@
 --------------------------------------------------------------------------- PRIVATE FUNCTIONS
 -------------------------------------------------------------------------------------------*/
 
+#define YIN_MIN_TAU (YIN_SAMPLING_RATE / YIN_MAX_FREQ)
+#define YIN_MAX_TAU (YIN_SAMPLING_RATE / YIN_MIN_FREQ)
 
 static float yinBuffer[YIN_BUFFER_SIZE];
 
@@ -15,23 +17,43 @@ static float yinBuffer[YIN_BUFFER_SIZE];
  * This is the Yin algorithms tweak on autocorellation. Read http://audition.ens.fr/adc/pdf/2002_JASA_YIN.pdf
  * for more details on what is in here and why it's done this way.
  */
-void Yin_difference(Yin *yin, int16_t* buffer){
-	int16_t i;
-	int16_t tau;
-	float delta;
+// void Yin_difference(Yin *yin, int16_t* buffer){
+// 	int16_t i;
+// 	int16_t tau;
+// 	float delta;
+//
+// 	/* Calculate the difference for difference shift values (tau) for the half of the samples */
+// 	for(tau = 0 ; tau < yin->halfBufferSize; tau++){
+//
+// 		/* Take the difference of the signal with a shifted version of itself, then square it.
+// 		 * (This is the Yin algorithm's tweak on autocorellation) */
+// 		for(i = 0; i < yin->halfBufferSize; i++){
+// 			delta = buffer[i] - buffer[i + tau];
+// 			yin->yinBuffer[tau] += delta * delta;
+// 		}
+// 	}
+// }
 
-	/* Calculate the difference for difference shift values (tau) for the half of the samples */
-	for(tau = 0 ; tau < yin->halfBufferSize; tau++){
 
-		/* Take the difference of the signal with a shifted version of itself, then square it.
-		 * (This is the Yin algorithm's tweak on autocorellation) */
-		for(i = 0; i < yin->halfBufferSize; i++){
-			delta = buffer[i] - buffer[i + tau];
-			yin->yinBuffer[tau] += delta * delta;
+void __attribute__ ((optimize(3))) Yin_difference(Yin *yin, int16_t *buffer) {
+	for (int16_t tau=0; tau<yin->halfBufferSize; tau++) {
+		for (int16_t i=0; i<yin->halfBufferSize/2; i++) {
+			int32_t deltas;
+			__asm (
+				"sadd16 %0, %1, %2\n"
+				: "=r" (deltas)
+				: "r" (buffer[2*i]), "r" (buffer[2*i + tau])
+			);
+			int32_t total;
+			__asm (
+				"smuad %0, %1, %1\n"
+				: "=r" (total)
+				: "r" (deltas)
+			);
+			yin->yinBuffer[tau] += total;
 		}
 	}
 }
-
 
 /**
  * Step 2: Calculate the cumulative mean on the normalised difference calculated in step 1

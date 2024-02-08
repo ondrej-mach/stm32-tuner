@@ -2,6 +2,7 @@
 #include "i2s.h"
 #include "log.h"
 #include "yin.h"
+#include "note.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
@@ -41,15 +42,29 @@ static void passthrough(const int32_t *restrict in, int32_t *restrict out) {
 
 static void tuner_task(void *args __attribute((unused))) {
     static Yin yin;
-    Yin_init(&yin, YIN_BUFFER_SIZE, 0.5);
+    static Note note;
+    Yin_init(&yin, YIN_BUFFER_SIZE, 0.1);
 
     while (1) {
         xSemaphoreGive(tunerListenSem);
-        if (xSemaphoreTake(tunerCalcSem, portMAX_DELAY) == pdTRUE) {
-            float pitch = Yin_getPitch(&yin, tunerBuffer);
-            float prob = Yin_getProbability(&yin);
+        while (xSemaphoreTake(tunerCalcSem, portMAX_DELAY) != pdTRUE);
+
+        TickType_t start = xTaskGetTickCount();
+        float pitch = Yin_getPitch(&yin, tunerBuffer);
+        float prob = Yin_getProbability(&yin);
+        TickType_t stop = xTaskGetTickCount();
+
+        if (pitch > 0) {
             printf("Pitch is found to be %f with probability %f\n", pitch, prob);
+            freqToNote(pitch, &note);
+            printf("%s %+d cents (octave %d)\n",
+                noteNameStrings[note.name],
+                note.cents,
+                note.octave
+            );
         }
+
+        printf("%d ms\n", portTICK_RATE_MS * (stop - start));
     }
 }
 

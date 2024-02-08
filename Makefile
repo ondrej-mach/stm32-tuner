@@ -95,7 +95,7 @@ endif
 DEFS		+= $(INCLUDES)
 LDFLAGS		+= -L$(OPENCM3_DIR)/lib
 LDLIBS		+= -l$(LIBNAME)
-LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
+LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -lm
 
 all: libopencm3 freertos $(BIN_DIR)/$(PROJECT_NAME).bin
 
