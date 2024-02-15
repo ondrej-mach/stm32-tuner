@@ -40,6 +40,12 @@ static void passthrough(const int32_t *restrict in, int32_t *restrict out) {
 }
 
 
+static QueueHandle_t tunerQueue;
+
+void audio_set_tuner_queue(QueueHandle_t queue) {
+    tunerQueue = queue;
+}
+
 static void tuner_task(void *args __attribute((unused))) {
     static Yin yin;
     static Note note;
@@ -53,17 +59,21 @@ static void tuner_task(void *args __attribute((unused))) {
         float pitch = Yin_getPitch(&yin, tunerBuffer);
         float prob = Yin_getProbability(&yin);
         TickType_t stop = xTaskGetTickCount();
-
-        if (pitch > 0) {
-            printf("Pitch is found to be %f with probability %f\n", pitch, prob);
-            freqToNote(pitch, &note);
-            printf("%s %+d cents (octave %d)\n",
-                noteNameStrings[note.name],
-                note.cents,
-                note.octave
-            );
+        freqToNote(pitch, &note);
+        if (tunerQueue) {
+            xQueueSendToBack(tunerQueue, &note, portMAX_DELAY);
         }
 
+        // if (pitch > 0) {
+        //     printf("Pitch is found to be %f with probability %f\n", pitch, prob);
+        //     freqToNote(pitch, &note);
+        //     printf("%s %+d cents (octave %d)\n",
+        //         noteNameStrings[note.name],
+        //         note.cents,
+        //         note.octave
+        //     );
+        // }
+        //
         printf("%d ms\n", portTICK_RATE_MS * (stop - start));
     }
 }

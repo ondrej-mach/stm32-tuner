@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <printf.h>
+#include <display.h>
 
 
 static void task1(void *args __attribute((unused))) {
@@ -41,6 +42,7 @@ int main(void) {
 	usb_init();
 	xTaskCreate(task2, "PRINTER", 100, NULL, configMAX_PRIORITIES-1, NULL);
 
+	ui_init();
 	audio_init();
 
 	vTaskStartScheduler();

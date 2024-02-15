@@ -8,6 +8,7 @@ endif
 OPENCM3_DIR := inc/libopencm3
 FREERTOS_DIR := inc/FreeRTOS
 PRINTF_DIR := inc/printf
+SSD1306_DIR := inc/stm32-ssd1306/ssd1306
 
 DEFS += -DDEBUG
 
@@ -29,9 +30,12 @@ SRC_FILES += $(FREERTOS_DIR)/portable/MemMang/heap_4.c
 
 SRC_FILES += $(PRINTF_DIR)/printf.c
 
+SRC_FILES += $(wildcard $(SSD1306_DIR)/*.c)
+
 INCLUDES  = -I$(realpath config)
 INCLUDES += -I$(realpath src)
 INCLUDES += -I$(PRINTF_DIR)
+INCLUDES += -I$(SSD1306_DIR)
 INCLUDES += -I$(OPENCM3_DIR)/include
 INCLUDES += -I$(FREERTOS_DIR)/include
 INCLUDES += -I$(FREERTOS_DIR)/portable/GCC/ARM_CM4F
