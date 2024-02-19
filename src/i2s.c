@@ -142,7 +142,7 @@ void dma1_stream3_isr(void) {
 
 }
 
-extern void init_codec(void) {
+void init_codec(void) {
     init_clocks();
     init_gpio();
     init_i2s();
