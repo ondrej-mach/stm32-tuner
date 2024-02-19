@@ -35,12 +35,12 @@ static float yinBuffer[YIN_BUFFER_SIZE];
 // }
 
 
-void __attribute__ ((optimize(3))) Yin_difference(Yin *yin, int16_t *buffer) {
+static void __attribute__((optimize(3))) Yin_difference(Yin *yin, int16_t *buffer) {
 	for (int16_t tau=0; tau<yin->halfBufferSize; tau++) {
 		for (int16_t i=0; i<yin->halfBufferSize/2; i++) {
 			int32_t deltas;
 			__asm (
-				"sadd16 %0, %1, %2\n"
+				"ssub16 %0, %1, %2\n"
 				: "=r" (deltas)
 				: "r" (buffer[2*i]), "r" (buffer[2*i + tau])
 			);
