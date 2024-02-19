@@ -59,21 +59,13 @@ static void tuner_task(void *args __attribute((unused))) {
         float pitch = Yin_getPitch(&yin, tunerBuffer);
         float prob = Yin_getProbability(&yin);
         TickType_t stop = xTaskGetTickCount();
+
         freqToNote(pitch, &note);
+
         if (tunerQueue) {
             xQueueSendToBack(tunerQueue, &note, portMAX_DELAY);
         }
 
-        // if (pitch > 0) {
-        //     printf("Pitch is found to be %f with probability %f\n", pitch, prob);
-        //     freqToNote(pitch, &note);
-        //     printf("%s %+d cents (octave %d)\n",
-        //         noteNameStrings[note.name],
-        //         note.cents,
-        //         note.octave
-        //     );
-        // }
-        //
         printf("%d ms\n", portTICK_RATE_MS * (stop - start));
     }
 }

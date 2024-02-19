@@ -261,25 +261,6 @@ void usb_debug_log(char *str) {
 	} while (wb == 0);
 }
 
-/*
-int _write(int fd, char *ptr, int len)
-{
-	(void)fd;
-	const int USB_MAX_PACKET_SIZE = 64;
-	int index = 0;
-
-	while (index < len) {
-		uint16_t packetLen = MIN(len-index, USB_MAX_PACKET_SIZE);
-		int wb;
-		do {
-			wb = usbd_ep_write_packet(usbd_dev, 0x82, &ptr[index], packetLen);
-		} while (wb == 0);
-		index += packetLen;
-	}
-
-	return len;
-}
-*/
 
 void _putchar(char c) {
 	int wb = 0;
