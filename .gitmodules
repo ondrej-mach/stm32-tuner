@@ -9,4 +9,4 @@
 	url = https://github.com/mpaland/printf
 [submodule "inc/stm32-ssd1306"]
 	path = inc/stm32-ssd1306
-	url = https://github.com/afiskon/stm32-ssd1306.git
+	url = https://github.com/ondrej-mach/libopencm3-ssd1306.git
